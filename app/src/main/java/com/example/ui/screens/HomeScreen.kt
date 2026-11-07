@@ -44,6 +44,19 @@ import com.example.ui.theme.YouTubeSurface
 import com.example.ui.theme.YouTubeTextPrimary
 import com.example.ui.theme.YouTubeTextSecondary
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
+import com.example.R
+import com.example.ui.theme.YouTubeGold
+
 @Composable
 fun HomeScreen(
     songs: List<Song>,
@@ -56,6 +69,7 @@ fun HomeScreen(
     onSongClick: (Song) -> Unit,
     onFavoriteToggle: (Song) -> Unit,
     onDownloadClick: (Song) -> Unit,
+    onOpenShorts: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -151,12 +165,143 @@ fun HomeScreen(
                 }
             }
         } else {
-            // Video Feed List
+            // Video Feed List with Shorts Shelf
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .testTag("home_video_feed")
             ) {
+                // Trending Shorts Shelf
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp, bottom = 12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(YouTubeRed),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.PlayArrow,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "مقاطع قصيرة • Shorts & Reels",
+                                    color = Color.White,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Text(
+                                text = "فتح المقاطع ←",
+                                color = YouTubeGold,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .clickable { onOpenShorts() }
+                                    .padding(horizontal = 6.dp, vertical = 4.dp)
+                            )
+                        }
+
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 14.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(RahmaCatalog.reels, key = { it.id }) { reel ->
+                                Card(
+                                    modifier = Modifier
+                                        .width(135.dp)
+                                        .height(210.dp)
+                                        .clickable { onOpenShorts() },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+                                    border = androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFF333333))
+                                ) {
+                                    Box(modifier = Modifier.fillMaxSize()) {
+                                        Image(
+                                            painter = painterResource(id = R.drawable.rahma_hero_banner),
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize(),
+                                            alpha = 0.65f
+                                        )
+
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(
+                                                    Brush.verticalGradient(
+                                                        colors = listOf(
+                                                            Color(0x33000000),
+                                                            Color.Transparent,
+                                                            Color(0xEE0F0F0F)
+                                                        )
+                                                    )
+                                                )
+                                        )
+
+                                        // Badge
+                                        Box(
+                                            modifier = Modifier
+                                                .align(Alignment.TopEnd)
+                                                .padding(6.dp)
+                                                .clip(RoundedCornerShape(4.dp))
+                                                .background(YouTubeRed)
+                                                .padding(horizontal = 5.dp, vertical = 2.dp)
+                                        ) {
+                                            Text(
+                                                text = "شورتس",
+                                                color = Color.White,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+
+                                        Column(
+                                            modifier = Modifier
+                                                .align(Alignment.BottomStart)
+                                                .padding(8.dp)
+                                        ) {
+                                            Text(
+                                                text = reel.title,
+                                                color = Color.White,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                maxLines = 2,
+                                                overflow = TextOverflow.Ellipsis,
+                                                lineHeight = 15.sp
+                                            )
+                                            Spacer(modifier = Modifier.height(3.dp))
+                                            Text(
+                                                text = "${reel.viewsCount} مشاهدة",
+                                                color = YouTubeGold,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 items(
                     items = songs,
                     key = { it.id }

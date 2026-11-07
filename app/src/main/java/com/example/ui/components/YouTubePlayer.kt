@@ -254,7 +254,6 @@ fun YouTubePlayer(
                 )
             }
 
-            // Video Screen View (16:9 Aspect Ratio)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -262,50 +261,12 @@ fun YouTubePlayer(
                     .background(Color.Black)
             ) {
                 if (isVideoMode) {
-                    // Video Mode Canvas: Cinematic background with concert stage & pulsing animation
-                    Image(
-                        painter = painterResource(id = R.drawable.rahma_hero_banner),
-                        contentDescription = "مشغل الفيديو",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                        alpha = if (isPlaying) 0.85f else 0.45f
+                    // Real YouTube Media & Audio Stream Player
+                    YouTubeEmbedView(
+                        videoId = song.youtubeVideoId,
+                        isPlaying = isPlaying,
+                        modifier = Modifier.fillMaxSize()
                     )
-
-                    // Stage lighting gradient
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color(0x33000000),
-                                        Color.Transparent,
-                                        Color(0xAA0F0F0F)
-                                    )
-                                )
-                            )
-                    )
-
-                    // Real-time Lyrics Subtitle at bottom of video
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 8.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0x99000000))
-                            .padding(horizontal = 12.dp, vertical = 4.dp)
-                    ) {
-                        val currentLine = song.lyrics.lines().getOrNull(
-                            ((currentPositionSeconds / 8) % song.lyrics.lines().size.coerceAtLeast(1))
-                        ) ?: song.arabicTitle
-                        Text(
-                            text = currentLine,
-                            color = Color.White,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-                        )
-                    }
                 } else {
                     // Audio Mode Canvas: Glowing vinyl disk with artist avatar
                     Box(
@@ -447,7 +408,7 @@ fun YouTubePlayer(
                     .weight(1f)
                     .padding(horizontal = 14.dp)
             ) {
-                // Song Title & Views
+                // Song Title & Live YouTube Statistics
                 item {
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
@@ -461,12 +422,102 @@ fun YouTubePlayer(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "${song.viewsCount} • ${song.releaseYear} • ألحان: ${song.composer} • كلمات: ${song.lyricist}",
+                        text = "${song.viewsCount} • نشر بتاريخ: ${song.publishDate} • ألحان: ${song.composer} • كلمات: ${song.lyricist}",
                         color = YouTubeTextSecondary,
                         fontSize = 12.sp
                     )
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // YouTube Live Statistics Card
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1C1C1C)),
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFF333333))
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(YouTubeRed),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.PlayArrow,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "إحصائيات منصة YouTube الرسمية",
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                song.trendingRank?.let { rank ->
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(Color(0xFF2E2000))
+                                            .border(0.5.dp, YouTubeGold.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = rank,
+                                            color = YouTubeGold,
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(text = "المشاهدات", color = YouTubeTextSecondary, fontSize = 10.sp)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(text = song.viewsCount.substringBefore(" "), color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                                }
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(text = "الإعجابات", color = YouTubeTextSecondary, fontSize = 10.sp)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(text = song.likesCount, color = YouTubeRed, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(text = "التعليقات", color = YouTubeTextSecondary, fontSize = 10.sp)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(text = song.commentsCount, color = YouTubeGold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(text = "المشتركين", color = YouTubeTextSecondary, fontSize = 10.sp)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(text = song.channelSubscribers, color = Color(0xFF64B5F6), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
 
                 // Action Buttons Row (Like, Download, Share, Speed, Loop)

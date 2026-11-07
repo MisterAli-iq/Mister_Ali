@@ -25,7 +25,36 @@ data class Song(
     val isNewRelease: Boolean = false,
     val gradientStartHex: Long = 0xFF8B0000,
     val gradientEndHex: Long = 0xFF1A1A1A,
-    val isVideoAvailable: Boolean = true
+    val isVideoAvailable: Boolean = true,
+    val youtubeVideoId: String = "VlhKzTzVfqg",
+    val likesCount: String = "1.5M إعجاب",
+    val commentsCount: String = "45K تعليق",
+    val channelSubscribers: String = "5.8M مشترك",
+    val publishDate: String = "2021",
+    val trendingRank: String? = null
+)
+
+data class RahmaReel(
+    val id: String,
+    val title: String,
+    val caption: String,
+    val youtubeVideoId: String,
+    val viewsCount: String,
+    val likesCount: String,
+    val initialLikes: Int = 125000,
+    val commentsCount: String = "3.4K",
+    val sharesCount: String = "14.2K",
+    val songTitle: String = "رحمة رياض - الكوكب",
+    val dateText: String = "جديد",
+    val tags: List<String> = listOf("رحمة_رياض", "شورتس", "تريند_عراقي")
+)
+
+data class ReelComment(
+    val id: String,
+    val authorName: String,
+    val text: String,
+    val timeAgo: String,
+    val likesCount: String
 )
 
 enum class DownloadType(val titleArabic: String, val extension: String) {

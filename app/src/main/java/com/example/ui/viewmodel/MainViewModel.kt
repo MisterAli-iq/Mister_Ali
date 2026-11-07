@@ -15,6 +15,7 @@ import android.util.Log
 import com.example.data.SettingsManager
 import com.example.data.firebase.FirebaseRepository
 import com.example.data.local.LocalFileEntity
+import com.example.data.local.LocalMediaScanner
 import com.example.model.AppAccentColor
 import com.example.model.AppSettings
 import com.example.model.AppThemeMode
@@ -34,6 +35,7 @@ import kotlinx.coroutines.launch
 
 enum class ScreenTab {
     HOME,
+    SHORTS,
     FAVORITES,
     DOWNLOADS,
     NOTIFICATIONS,
@@ -159,10 +161,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        // Collect local files
+        // Collect local files and auto-scan if empty
         viewModelScope.launch {
             repository.getAllLocalFiles().collectLatest { files ->
                 _uiState.update { it.copy(localFiles = files) }
+                if (files.isEmpty() && settingsManager.settings.value.showLocalDeviceFiles) {
+                    val scanned = LocalMediaScanner.scanAllDeviceMedia(application)
+                    repository.saveLocalFiles(scanned)
+                }
             }
         }
     }
@@ -430,6 +436,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateShowLocalFiles(show: Boolean) {
         settingsManager.updateShowLocalFiles(show)
+        if (show) {
+            scanDeviceMedia()
+        }
+    }
+
+    fun scanDeviceMedia() {
+        viewModelScope.launch {
+            val scanned = LocalMediaScanner.scanAllDeviceMedia(getApplication())
+            repository.saveLocalFiles(scanned)
+            showSnackbar("تم فحص وتحديث وسائط الجهاز تلقائياً (${scanned.size} ملف) 📱")
+        }
     }
 
     fun updateAutoPlayNext(enabled: Boolean) {

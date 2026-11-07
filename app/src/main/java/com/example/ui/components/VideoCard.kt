@@ -47,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.R
 import com.example.model.Song
 import com.example.ui.theme.YouTubeBlack
@@ -84,7 +85,7 @@ fun VideoCard(
                 .aspectRatio(16f / 9f)
                 .background(Color(0xFF1E1E1E))
         ) {
-            // Background Artwork
+            // Background Artwork & Real YouTube Video Thumbnail
             val startColor = Color(song.gradientStartHex)
             val endColor = Color(song.gradientEndHex)
 
@@ -97,13 +98,13 @@ fun VideoCard(
                         )
                     )
             ) {
-                // Concert Banner or Artistic Representation
-                Image(
-                    painter = painterResource(id = R.drawable.rahma_hero_banner),
+                // Official YouTube Thumbnail from YouTube CDN
+                AsyncImage(
+                    model = "https://img.youtube.com/vi/${song.youtubeVideoId}/hqdefault.jpg",
                     contentDescription = song.arabicTitle,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().padding(1.dp),
-                    alpha = 0.55f
+                    modifier = Modifier.fillMaxSize(),
+                    error = painterResource(id = R.drawable.img_rahma_instagram_concert)
                 )
 
                 // Dramatic Dark Gradient Overlay
@@ -224,14 +225,15 @@ fun VideoCard(
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.Top
         ) {
-            // Channel Avatar
+            // Channel Avatar with Real Instagram Photo
             Image(
-                painter = painterResource(id = R.drawable.rahma_avatar),
+                painter = painterResource(id = R.drawable.img_rahma_instagram_casual),
                 contentDescription = "قناة رحمة رياض",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(38.dp)
                     .clip(CircleShape)
+                    .border(1.dp, YouTubeRed.copy(alpha = 0.5f), CircleShape)
             )
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -252,12 +254,32 @@ fun VideoCard(
 
                 Spacer(modifier = Modifier.height(3.dp))
 
-                Text(
-                    text = "Rahma Riad • ${song.viewsCount} • ${song.releaseYear}",
-                    color = YouTubeTextSecondary,
-                    fontSize = 12.sp,
-                    maxLines = 1
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 2.dp)
+                ) {
+                    Text(
+                        text = "رحمة رياض • ${song.viewsCount}",
+                        color = YouTubeTextSecondary,
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color(0xFF241416))
+                            .padding(horizontal = 5.dp, vertical = 1.dp)
+                    ) {
+                        Text(
+                            text = "❤️ ${song.likesCount.substringBefore(" ")}",
+                            color = YouTubeRed,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
 
             // More Options (3 Dots)

@@ -171,11 +171,11 @@ fun AboutScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(130.dp)
+                        .height(180.dp)
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.rahma_hero_banner),
-                        contentDescription = "رحمة رياض",
+                        painter = painterResource(id = R.drawable.img_rahma_instagram_concert),
+                        contentDescription = "رحمة رياض في الحفل",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
@@ -194,13 +194,13 @@ fun AboutScreen(
                 Box(
                     modifier = Modifier
                         .padding(top = 0.dp)
-                        .size(80.dp)
+                        .size(86.dp)
                         .clip(CircleShape)
                         .border(3.dp, YouTubeRed, CircleShape)
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.rahma_avatar),
-                        contentDescription = "رحمة رياض",
+                        painter = painterResource(id = R.drawable.img_rahma_instagram_casual),
+                        contentDescription = "رحمة رياض إنستغرام",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )

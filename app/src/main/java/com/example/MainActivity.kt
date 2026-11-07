@@ -53,12 +53,15 @@ import com.example.ui.components.DownloadDialog
 import com.example.ui.components.MiniPlayer
 import com.example.ui.components.YouTubePlayer
 import com.example.ui.components.YouTubeTopBar
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.PlayArrow
 import com.example.ui.screens.AboutScreen
 import com.example.ui.screens.DownloadsScreen
 import com.example.ui.screens.FavoritesScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.NotificationsScreen
 import com.example.ui.screens.SettingsScreen
+import com.example.ui.screens.ShortsScreen
 import com.example.ui.theme.LocalCustomTheme
 import com.example.ui.theme.RahmaRiadTheme
 import com.example.ui.theme.YouTubeBlack
@@ -238,6 +241,26 @@ fun RahmaRiadApp(
                             )
 
                             NavigationBarItem(
+                                selected = uiState.currentTab == ScreenTab.SHORTS,
+                                onClick = { viewModel.selectTab(ScreenTab.SHORTS) },
+                                icon = {
+                                    Icon(
+                                        imageVector = if (uiState.currentTab == ScreenTab.SHORTS) Icons.Filled.PlayArrow else Icons.Outlined.PlayArrow,
+                                        contentDescription = "شورتس"
+                                    )
+                                },
+                                label = { Text("شورتس", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = Color.White,
+                                    selectedTextColor = Color.White,
+                                    indicatorColor = accentColor,
+                                    unselectedIconColor = customTheme.textSecondary,
+                                    unselectedTextColor = customTheme.textSecondary
+                                ),
+                                modifier = Modifier.testTag("nav_item_shorts")
+                            )
+
+                            NavigationBarItem(
                                 selected = uiState.currentTab == ScreenTab.FAVORITES,
                                 onClick = { viewModel.selectTab(ScreenTab.FAVORITES) },
                                 icon = {
@@ -352,8 +375,13 @@ fun RahmaRiadApp(
                             onCategorySelected = viewModel::selectCategory,
                             onSongClick = { song -> viewModel.playSong(song, expandPlayer = true) },
                             onFavoriteToggle = viewModel::toggleFavorite,
-                            onDownloadClick = viewModel::promptDownload
+                            onDownloadClick = viewModel::promptDownload,
+                            onOpenShorts = { viewModel.selectTab(ScreenTab.SHORTS) }
                         )
+                    }
+
+                    ScreenTab.SHORTS -> {
+                        ShortsScreen()
                     }
 
                     ScreenTab.FAVORITES -> {

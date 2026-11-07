@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.OfflinePin
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -54,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.R
 import com.example.data.RahmaCatalog
 import com.example.data.local.LocalFileEntity
@@ -77,6 +79,7 @@ fun DownloadsScreen(
     onDeleteDownload: (DownloadedMedia) -> Unit,
     onDeleteLocalFile: (String) -> Unit = {},
     onImportLocalFiles: () -> Unit = {},
+    onScanDeviceMedia: () -> Unit = {},
     onGoToHome: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -221,20 +224,32 @@ fun DownloadsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "الملفات الصوتية من ذاكرة الهاتف (${localFiles.size})",
+                    text = "ملفات وسائط الهاتف (${localFiles.size})",
                     color = customTheme.textPrimary,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold
                 )
 
-                Button(
-                    onClick = onImportLocalFiles,
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = YouTubeRed)
-                ) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("استيراد ملفات", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Button(
+                        onClick = onScanDeviceMedia,
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF242424))
+                    ) {
+                        Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(15.dp), tint = YouTubeGold)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("فحص تلقائي", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+
+                    Button(
+                        onClick = onImportLocalFiles,
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = YouTubeRed)
+                    ) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(15.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("استيراد", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
 
@@ -430,26 +445,35 @@ fun DownloadsScreen(
                                     .padding(10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // Icon Box (Video or Audio)
+                                // Video or Audio Thumbnail with YouTube Thumbnail & Instagram Fallback
                                 Box(
                                     modifier = Modifier
-                                        .size(60.dp, 44.dp)
+                                        .size(62.dp, 46.dp)
                                         .clip(RoundedCornerShape(6.dp))
                                         .background(Color(0xFF222222))
                                 ) {
-                                    Image(
-                                        painter = painterResource(id = R.drawable.rahma_hero_banner),
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize(),
-                                        alpha = 0.5f
-                                    )
+                                    if (song != null) {
+                                        AsyncImage(
+                                            model = "https://img.youtube.com/vi/${song.youtubeVideoId}/hqdefault.jpg",
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize(),
+                                            error = painterResource(id = R.drawable.img_rahma_instagram_concert)
+                                        )
+                                    } else {
+                                        Image(
+                                            painter = painterResource(id = R.drawable.img_rahma_instagram_concert),
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
                                     Icon(
                                         imageVector = if (item.downloadType == DownloadType.FULL_VIDEO) Icons.Default.Videocam else Icons.Default.MusicNote,
                                         contentDescription = null,
                                         tint = if (item.downloadType == DownloadType.FULL_VIDEO) YouTubeRed else YouTubeGold,
                                         modifier = Modifier
-                                            .size(22.dp)
+                                            .size(20.dp)
                                             .align(Alignment.Center)
                                     )
                                 }
