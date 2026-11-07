@@ -9,9 +9,10 @@ import androidx.room.RoomDatabase
     entities = [
         FavoriteEntity::class,
         DownloadEntity::class,
-        NotificationEntity::class
+        NotificationEntity::class,
+        LocalFileEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

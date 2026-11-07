@@ -55,11 +55,15 @@ import com.example.ui.theme.YouTubeRed
 import com.example.ui.theme.YouTubeSurface
 import com.example.ui.theme.YouTubeTextPrimary
 import com.example.ui.theme.YouTubeTextSecondary
+import com.example.ui.theme.LocalCustomTheme
 
 import android.util.Log
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
@@ -80,9 +84,12 @@ import kotlinx.coroutines.withContext
 fun AboutScreen(
     currentUser: FirebaseUser? = null,
     onSignOut: () -> Unit = {},
+    onPromptSignIn: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val customTheme = LocalCustomTheme.current
     val coroutineScope = rememberCoroutineScope()
     val credentialManager = remember { CredentialManager.create(context) }
     val scrollState = rememberScrollState()
@@ -90,11 +97,67 @@ fun AboutScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(YouTubeBlack)
+            .background(customTheme.background)
             .verticalScroll(scrollState)
             .padding(horizontal = 14.dp, vertical = 12.dp)
             .testTag("about_screen")
     ) {
+        // Quick Settings Shortcut Card
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp)
+                .clickable { onNavigateToSettings() }
+                .testTag("about_to_settings_card"),
+            colors = CardDefaults.cardColors(containerColor = customTheme.surface),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(YouTubeRed.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = null,
+                            tint = YouTubeRed,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "الإعدادات والمظهر والمحتوى المحلي",
+                            color = customTheme.textPrimary,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "تغيير الثيم، ألوان الواجهة، مؤقت النوم، وملفات الهاتف",
+                            color = customTheme.textSecondary,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    tint = customTheme.textSecondary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+
         // Hero Artist Card
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -275,105 +338,188 @@ fun AboutScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // User Profile & Cloud Sync Card
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("user_account_card"),
-            colors = CardDefaults.cardColors(containerColor = YouTubeSurface),
-            shape = RoundedCornerShape(14.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
+        if (currentUser != null) {
+            // User Profile & Cloud Sync Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("user_account_card"),
+                colors = CardDefaults.cardColors(containerColor = YouTubeSurface),
+                shape = RoundedCornerShape(14.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier.padding(16.dp)
                 ) {
-                    Box(
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(CircleShape)
+                                .background(YouTubeRed.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription = "حساب المستخدم",
+                                tint = YouTubeRed,
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = currentUser.displayName ?: "مستخدم رحمة رياض",
+                                color = YouTubeTextPrimary,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = currentUser.email ?: "حساب Google متصل",
+                                color = YouTubeTextSecondary,
+                                fontSize = 12.sp
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0xFF1B5E20))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.CloudDone,
+                                    contentDescription = null,
+                                    tint = Color(0xFF81C784),
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "سحابي",
+                                    color = Color(0xFFE8F5E9),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            signOutUser(credentialManager, coroutineScope) {
+                                onSignOut()
+                            }
+                        },
                         modifier = Modifier
-                            .size(46.dp)
-                            .clip(CircleShape)
-                            .background(YouTubeRed.copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .testTag("sign_out_button"),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = YouTubeRed
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, YouTubeRed.copy(alpha = 0.6f))
                     ) {
                         Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "حساب المستخدم",
+                            imageVector = Icons.Default.ExitToApp,
+                            contentDescription = null,
                             tint = YouTubeRed,
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(18.dp)
                         )
-                    }
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = currentUser?.displayName ?: "مستخدم رحمة رياض",
-                            color = YouTubeTextPrimary,
-                            fontSize = 15.sp,
+                            text = "تسجيل الخروج من الحساب",
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Bold
                         )
-                        Text(
-                            text = currentUser?.email ?: "حساب Google متصل",
-                            color = YouTubeTextSecondary,
-                            fontSize = 12.sp
-                        )
+                    }
+                }
+            }
+        } else {
+            // Guest Mode Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("guest_account_card"),
+                colors = CardDefaults.cardColors(containerColor = YouTubeSurface),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF2C2C2C)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription = null,
+                                tint = YouTubeTextSecondary,
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "وضع الزائر (غير مسجل)",
+                                color = YouTubeTextPrimary,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "سجّل الدخول بحساب Google لحفظ مفضلتك سحابياً",
+                                color = YouTubeTextSecondary,
+                                fontSize = 11.sp
+                            )
+                        }
                     }
 
-                    Box(
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Button(
+                        onClick = onPromptSignIn,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFF1B5E20))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .fillMaxWidth()
+                            .testTag("sign_in_from_about_button"),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Black
+                        )
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.CloudDone,
-                                contentDescription = null,
-                                tint = Color(0xFF81C784),
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
                             Text(
-                                text = "سحابي",
-                                color = Color(0xFFE8F5E9),
-                                fontSize = 11.sp,
+                                text = "G",
+                                color = Color(0xFF4285F4),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "تسجيل الدخول بحساب Google",
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
                     }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                OutlinedButton(
-                    onClick = {
-                        signOutUser(credentialManager, coroutineScope) {
-                            onSignOut()
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("sign_out_button"),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = YouTubeRed
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, YouTubeRed.copy(alpha = 0.6f))
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ExitToApp,
-                        contentDescription = null,
-                        tint = YouTubeRed,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "تسجيل الخروج من الحساب",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
-                    )
                 }
             }
         }

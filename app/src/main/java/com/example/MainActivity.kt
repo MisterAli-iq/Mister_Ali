@@ -58,6 +58,8 @@ import com.example.ui.screens.DownloadsScreen
 import com.example.ui.screens.FavoritesScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.NotificationsScreen
+import com.example.ui.screens.SettingsScreen
+import com.example.ui.theme.LocalCustomTheme
 import com.example.ui.theme.RahmaRiadTheme
 import com.example.ui.theme.YouTubeBlack
 import com.example.ui.theme.YouTubeRed
@@ -84,13 +86,21 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            RahmaRiadTheme {
+            val uiState by viewModel.uiState.collectAsState()
+            RahmaRiadTheme(
+                themeMode = uiState.settings.themeMode,
+                accentColor = uiState.settings.accentColor
+            ) {
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                    var isGuestMode by remember { mutableStateOf(false) }
                     var currentUser by remember { mutableStateOf(Firebase.auth.currentUser) }
 
                     DisposableEffect(Unit) {
                         val listener = FirebaseAuth.AuthStateListener { auth ->
                             currentUser = auth.currentUser
+                            if (auth.currentUser != null) {
+                                isGuestMode = false
+                            }
                         }
                         Firebase.auth.addAuthStateListener(listener)
                         onDispose {
@@ -98,18 +108,28 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    if (currentUser == null) {
+                    if (currentUser == null && !isGuestMode) {
                         AuthScreen(
-                            onAuthSuccess = { currentUser = Firebase.auth.currentUser }
+                            onAuthSuccess = {
+                                currentUser = Firebase.auth.currentUser
+                                isGuestMode = false
+                            },
+                            onSkipSignIn = {
+                                isGuestMode = true
+                            }
                         )
                     } else {
-                        val uid = currentUser!!.uid
-                        key(uid) {
+                        val sessionKey = currentUser?.uid ?: "guest_session"
+                        key(sessionKey) {
                             RahmaRiadApp(
                                 viewModel = viewModel,
                                 currentUser = currentUser,
                                 onSignOut = {
                                     currentUser = null
+                                    isGuestMode = false
+                                },
+                                onPromptSignIn = {
+                                    isGuestMode = false
                                 }
                             )
                         }
@@ -125,6 +145,7 @@ fun RahmaRiadApp(
     viewModel: MainViewModel,
     currentUser: FirebaseUser? = null,
     onSignOut: () -> Unit = {},
+    onPromptSignIn: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -142,14 +163,17 @@ fun RahmaRiadApp(
         uiState.downloads.map { it.songId }.toSet()
     }
 
+    val customTheme = LocalCustomTheme.current
+    val accentColor = Color(uiState.settings.accentColor.hex)
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(YouTubeBlack)
+            .background(customTheme.background)
     ) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
-            containerColor = YouTubeBlack,
+            containerColor = customTheme.background,
             topBar = {
                 // TopBar hidden when player is maximized in full screen
                 if (!playerState.isExpanded) {
@@ -160,7 +184,8 @@ fun RahmaRiadApp(
                         onSearchQueryChange = viewModel::onSearchQueryChanged,
                         onSearchToggle = viewModel::setSearchActive,
                         onNotificationClick = { viewModel.selectTab(ScreenTab.NOTIFICATIONS) },
-                        onAboutClick = { viewModel.selectTab(ScreenTab.ABOUT) }
+                        onAboutClick = { viewModel.selectTab(ScreenTab.ABOUT) },
+                        onSettingsClick = { viewModel.selectTab(ScreenTab.SETTINGS) }
                     )
                 }
             },
@@ -169,7 +194,7 @@ fun RahmaRiadApp(
                 if (!playerState.isExpanded) {
                     Column(
                         modifier = Modifier
-                            .background(YouTubeBlack)
+                            .background(customTheme.background)
                             .navigationBarsPadding()
                     ) {
                         // Docked MiniPlayer
@@ -187,7 +212,7 @@ fun RahmaRiadApp(
 
                         // YouTube-style Bottom Navigation Bar
                         NavigationBar(
-                            containerColor = YouTubeBlack,
+                            containerColor = customTheme.background,
                             contentColor = Color.White,
                             tonalElevation = 0.dp,
                             modifier = Modifier.testTag("bottom_nav_bar")
@@ -205,9 +230,9 @@ fun RahmaRiadApp(
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = Color.White,
                                     selectedTextColor = Color.White,
-                                    indicatorColor = YouTubeRed,
-                                    unselectedIconColor = YouTubeTextSecondary,
-                                    unselectedTextColor = YouTubeTextSecondary
+                                    indicatorColor = accentColor,
+                                    unselectedIconColor = customTheme.textSecondary,
+                                    unselectedTextColor = customTheme.textSecondary
                                 ),
                                 modifier = Modifier.testTag("nav_item_home")
                             )
@@ -343,8 +368,13 @@ fun RahmaRiadApp(
                     ScreenTab.DOWNLOADS -> {
                         DownloadsScreen(
                             downloads = uiState.downloads,
+                            localFiles = uiState.localFiles,
+                            showLocalFiles = uiState.settings.showLocalDeviceFiles,
                             onPlayOffline = { song -> viewModel.playSong(song, expandPlayer = true) },
+                            onPlayLocalFile = viewModel::playLocalFile,
                             onDeleteDownload = viewModel::deleteDownload,
+                            onDeleteLocalFile = viewModel::deleteLocalFile,
+                            onImportLocalFiles = { viewModel.selectTab(ScreenTab.SETTINGS) },
                             onGoToHome = { viewModel.selectTab(ScreenTab.HOME) }
                         )
                     }
@@ -359,7 +389,34 @@ fun RahmaRiadApp(
                     ScreenTab.ABOUT -> {
                         AboutScreen(
                             currentUser = currentUser,
-                            onSignOut = onSignOut
+                            onSignOut = onSignOut,
+                            onPromptSignIn = onPromptSignIn,
+                            onNavigateToSettings = { viewModel.selectTab(ScreenTab.SETTINGS) }
+                        )
+                    }
+
+                    ScreenTab.SETTINGS -> {
+                        SettingsScreen(
+                            settings = uiState.settings,
+                            localFiles = uiState.localFiles,
+                            onThemeModeChange = viewModel::updateThemeMode,
+                            onAccentColorChange = viewModel::updateAccentColor,
+                            onToggleShowLocalFiles = viewModel::updateShowLocalFiles,
+                            onImportLocalFiles = viewModel::importLocalFiles,
+                            onDeleteLocalFile = viewModel::deleteLocalFile,
+                            onClearAllLocalFiles = viewModel::clearAllLocalFiles,
+                            onPlayLocalFile = viewModel::playLocalFile,
+                            onAutoPlayNextChange = viewModel::updateAutoPlayNext,
+                            onRememberPositionChange = viewModel::updateRememberPosition,
+                            onQualityChange = viewModel::updateQuality,
+                            onAutoRepeatChange = viewModel::updateAutoRepeat,
+                            onLyricsSyncChange = viewModel::updateLyricsSync,
+                            onWifiOnlyChange = viewModel::updateWifiOnly,
+                            onNotificationsChange = viewModel::updateNotifications,
+                            onVibrateChange = viewModel::updateVibrate,
+                            onSleepTimerChange = viewModel::updateSleepTimer,
+                            onClearCache = viewModel::clearCache,
+                            onBack = { viewModel.selectTab(ScreenTab.HOME) }
                         )
                     }
                 }

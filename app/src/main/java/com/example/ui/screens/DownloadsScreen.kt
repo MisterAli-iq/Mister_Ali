@@ -18,9 +18,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.OfflinePin
 import androidx.compose.material.icons.filled.PlayArrow
@@ -54,11 +56,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.data.RahmaCatalog
+import com.example.data.local.LocalFileEntity
 import com.example.model.DownloadType
 import com.example.model.DownloadedMedia
 import com.example.model.Song
-import com.example.ui.theme.DarkChipBg
-import com.example.ui.theme.YouTubeBlack
+import com.example.ui.theme.LocalCustomTheme
 import com.example.ui.theme.YouTubeGold
 import com.example.ui.theme.YouTubeRed
 import com.example.ui.theme.YouTubeSurface
@@ -68,13 +70,26 @@ import com.example.ui.theme.YouTubeTextSecondary
 @Composable
 fun DownloadsScreen(
     downloads: List<DownloadedMedia>,
+    localFiles: List<LocalFileEntity> = emptyList(),
+    showLocalFiles: Boolean = true,
     onPlayOffline: (Song) -> Unit,
+    onPlayLocalFile: (LocalFileEntity) -> Unit = {},
     onDeleteDownload: (DownloadedMedia) -> Unit,
+    onDeleteLocalFile: (String) -> Unit = {},
+    onImportLocalFiles: () -> Unit = {},
     onGoToHome: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val customTheme = LocalCustomTheme.current
     var selectedFilterIndex by remember { mutableIntStateOf(0) }
-    val filterTabs = listOf("الكل", "فيديوهات (MP4)", "صوتيات (MP3)")
+
+    val filterTabs = remember(showLocalFiles, localFiles.size) {
+        if (showLocalFiles) {
+            listOf("الكل", "فيديوهات (MP4)", "صوتيات (MP3)", "ملفات الهاتف (${localFiles.size})")
+        } else {
+            listOf("الكل", "فيديوهات (MP4)", "صوتيات (MP3)")
+        }
+    }
 
     val filteredList = remember(downloads, selectedFilterIndex) {
         when (selectedFilterIndex) {
@@ -84,10 +99,12 @@ fun DownloadsScreen(
         }
     }
 
+    val isLocalFilesTab = showLocalFiles && selectedFilterIndex == 3
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(YouTubeBlack)
+            .background(customTheme.background)
             .padding(horizontal = 14.dp)
     ) {
         // Header
@@ -107,13 +124,14 @@ fun DownloadsScreen(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "التنزيلات (استماع بدون إنترنت)",
-                    color = YouTubeTextPrimary,
+                    text = "التنزيلات والمحتوى المحلي",
+                    color = customTheme.textPrimary,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
 
+            val totalCount = downloads.size + (if (showLocalFiles) localFiles.size else 0)
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
@@ -121,7 +139,7 @@ fun DownloadsScreen(
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = "${downloads.size} ملف أوفلاين",
+                    text = "$totalCount ملف أوفلاين",
                     color = Color.White,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
@@ -134,7 +152,7 @@ fun DownloadsScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 10.dp),
-            colors = CardDefaults.cardColors(containerColor = YouTubeSurface),
+            colors = CardDefaults.cardColors(containerColor = customTheme.surface),
             shape = RoundedCornerShape(10.dp)
         ) {
             Row(
@@ -149,22 +167,26 @@ fun DownloadsScreen(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "جميع المحتويات هنا مخزنة على جهازك وتعمل في وضع الطيران وبدون إنترنت.",
-                    color = YouTubeTextSecondary,
+                    text = if (isLocalFilesTab)
+                        "ملفاتك الصوتية المستوردة من ذاكرة الهاتف جاهزة للتشغيل المباشر داخل التطبيق."
+                    else
+                        "جميع المحتويات هنا مخزنة على جهازك وتعمل في وضع الطيران وبدون إنترنت.",
+                    color = customTheme.textSecondary,
                     fontSize = 12.sp,
                     lineHeight = 16.sp
                 )
             }
         }
 
-        // Tabs Row: All, Videos, Audios
+        // Tabs Row: All, Videos, Audios, Local Phone Files
         TabRow(
-            selectedTabIndex = selectedFilterIndex,
-            containerColor = YouTubeBlack,
+            selectedTabIndex = selectedFilterIndex.coerceAtMost(filterTabs.size - 1),
+            containerColor = customTheme.background,
             contentColor = Color.White,
             indicator = { tabPositions ->
+                val safeIndex = selectedFilterIndex.coerceAtMost(tabPositions.size - 1)
                 TabRowDefaults.SecondaryIndicator(
-                    Modifier.tabIndicatorOffset(tabPositions[selectedFilterIndex]),
+                    Modifier.tabIndicatorOffset(tabPositions[safeIndex]),
                     color = YouTubeRed
                 )
             },
@@ -177,7 +199,7 @@ fun DownloadsScreen(
                     text = {
                         Text(
                             text = title,
-                            color = if (selectedFilterIndex == index) Color.White else YouTubeTextSecondary,
+                            color = if (selectedFilterIndex == index) customTheme.textPrimary else customTheme.textSecondary,
                             fontSize = 12.sp,
                             fontWeight = if (selectedFilterIndex == index) FontWeight.Bold else FontWeight.Normal
                         )
@@ -188,148 +210,303 @@ fun DownloadsScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        if (filteredList.isEmpty()) {
-            Box(
+        // Content based on selected tab
+        if (isLocalFilesTab) {
+            // Local Device Files Tab
+            Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Default.FileDownload,
-                        contentDescription = null,
-                        tint = YouTubeTextSecondary,
-                        modifier = Modifier.size(68.dp)
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Text(
-                        text = "لا توجد ملفات منزلة حالياً",
-                        color = YouTubeTextPrimary,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "يمكنك تنزيل فيديوهات أو مسارات MP3 لأي أغنية بالضغط على زر التنزيل في المشغل.",
-                        color = YouTubeTextSecondary,
-                        fontSize = 13.sp,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 16.dp)
-                    )
-                    Spacer(modifier = Modifier.height(18.dp))
-                    Button(
-                        onClick = onGoToHome,
-                        colors = ButtonDefaults.buttonColors(containerColor = YouTubeRed),
-                        shape = RoundedCornerShape(20.dp)
-                    ) {
-                        Text("تصفح وتحميل الأغاني", color = Color.White, fontWeight = FontWeight.Bold)
-                    }
+                Text(
+                    text = "الملفات الصوتية من ذاكرة الهاتف (${localFiles.size})",
+                    color = customTheme.textPrimary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Button(
+                    onClick = onImportLocalFiles,
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = YouTubeRed)
+                ) {
+                    Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("استيراد ملفات", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .testTag("downloads_list")
-            ) {
-                items(
-                    items = filteredList,
-                    key = { it.id }
-                ) { item ->
-                    val song = RahmaCatalog.getSongById(item.songId)
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 5.dp)
-                            .clickable {
-                                if (song != null) onPlayOffline(song)
-                            },
-                        colors = CardDefaults.cardColors(containerColor = YouTubeSurface),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Row(
+
+            if (localFiles.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.FolderOpen,
+                            contentDescription = null,
+                            tint = customTheme.textSecondary,
+                            modifier = Modifier.size(68.dp)
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = "لا توجد ملفات محلية مضافة بعد",
+                            color = customTheme.textPrimary,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "يمكنك استيراد وتشغيل أي مقاطع صوتية أو فيديو من ذاكرة هاتفك عبر زر الاستيراد.",
+                            color = customTheme.textSecondary,
+                            fontSize = 13.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        Spacer(modifier = Modifier.height(18.dp))
+                        Button(
+                            onClick = onImportLocalFiles,
+                            colors = ButtonDefaults.buttonColors(containerColor = YouTubeRed),
+                            shape = RoundedCornerShape(20.dp)
+                        ) {
+                            Text("استيراد من الهاتف الآن", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .testTag("local_files_list")
+                ) {
+                    items(
+                        items = localFiles,
+                        key = { it.id }
+                    ) { file ->
+                        Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(10.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .padding(vertical = 5.dp)
+                                .clickable { onPlayLocalFile(file) },
+                            colors = CardDefaults.cardColors(containerColor = customTheme.surface),
+                            shape = RoundedCornerShape(10.dp)
                         ) {
-                            // Icon Box (Video or Audio)
-                            Box(
+                            Row(
                                 modifier = Modifier
-                                    .size(60.dp, 44.dp)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(Color(0xFF222222))
+                                    .fillMaxWidth()
+                                    .padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.rahma_hero_banner),
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize(),
-                                    alpha = 0.5f
-                                )
-                                Icon(
-                                    imageVector = if (item.downloadType == DownloadType.FULL_VIDEO) Icons.Default.Videocam else Icons.Default.MusicNote,
-                                    contentDescription = null,
-                                    tint = if (item.downloadType == DownloadType.FULL_VIDEO) YouTubeRed else YouTubeGold,
+                                Box(
                                     modifier = Modifier
-                                        .size(22.dp)
-                                        .align(Alignment.Center)
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.width(12.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = item.title,
-                                    color = YouTubeTextPrimary,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = item.downloadType.titleArabic,
-                                        color = YouTubeTextSecondary,
-                                        fontSize = 11.sp
+                                        .size(54.dp, 44.dp)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(Color(0xFF2E2500)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.MusicNote,
+                                        contentDescription = null,
+                                        tint = YouTubeGold,
+                                        modifier = Modifier.size(24.dp)
                                     )
+                                }
+
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = " • ${item.fileSizeFormatted}",
+                                        text = file.displayName,
+                                        color = customTheme.textPrimary,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "${file.mimeType.substringAfter('/')} • ${file.sizeFormatted}",
                                         color = YouTubeGold,
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 }
-                            }
 
-                            // Play offline icon
-                            IconButton(onClick = { if (song != null) onPlayOffline(song) }) {
-                                Icon(
-                                    imageVector = Icons.Default.PlayArrow,
-                                    contentDescription = "تشغيل أوفلاين",
-                                    tint = Color(0xFF4CAF50),
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
+                                IconButton(onClick = { onPlayLocalFile(file) }) {
+                                    Icon(
+                                        imageVector = Icons.Default.PlayArrow,
+                                        contentDescription = "تشغيل محلي",
+                                        tint = Color(0xFF4CAF50),
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                }
 
-                            // Delete button
-                            IconButton(onClick = { onDeleteDownload(item) }) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "حذف الملف",
-                                    tint = YouTubeTextSecondary,
-                                    modifier = Modifier.size(20.dp)
-                                )
+                                IconButton(onClick = { onDeleteLocalFile(file.id) }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "حذف من القائمة",
+                                        tint = customTheme.textSecondary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
                             }
                         }
                     }
-                }
 
-                item {
-                    Spacer(modifier = Modifier.height(90.dp))
+                    item {
+                        Spacer(modifier = Modifier.height(90.dp))
+                    }
+                }
+            }
+        } else {
+            // App Downloads Tabs (All, MP4, MP3)
+            if (filteredList.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.FileDownload,
+                            contentDescription = null,
+                            tint = customTheme.textSecondary,
+                            modifier = Modifier.size(68.dp)
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = "لا توجد ملفات منزلة حالياً",
+                            color = customTheme.textPrimary,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "يمكنك تنزيل فيديوهات أو مسارات MP3 لأي أغنية بالضغط على زر التنزيل في المشغل.",
+                            color = customTheme.textSecondary,
+                            fontSize = 13.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        Spacer(modifier = Modifier.height(18.dp))
+                        Button(
+                            onClick = onGoToHome,
+                            colors = ButtonDefaults.buttonColors(containerColor = YouTubeRed),
+                            shape = RoundedCornerShape(20.dp)
+                        ) {
+                            Text("تصفح وتحميل الأغاني", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .testTag("downloads_list")
+                ) {
+                    items(
+                        items = filteredList,
+                        key = { it.id }
+                    ) { item ->
+                        val song = RahmaCatalog.getSongById(item.songId)
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 5.dp)
+                                .clickable {
+                                    if (song != null) onPlayOffline(song)
+                                },
+                            colors = CardDefaults.cardColors(containerColor = customTheme.surface),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Icon Box (Video or Audio)
+                                Box(
+                                    modifier = Modifier
+                                        .size(60.dp, 44.dp)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(Color(0xFF222222))
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.rahma_hero_banner),
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize(),
+                                        alpha = 0.5f
+                                    )
+                                    Icon(
+                                        imageVector = if (item.downloadType == DownloadType.FULL_VIDEO) Icons.Default.Videocam else Icons.Default.MusicNote,
+                                        contentDescription = null,
+                                        tint = if (item.downloadType == DownloadType.FULL_VIDEO) YouTubeRed else YouTubeGold,
+                                        modifier = Modifier
+                                            .size(22.dp)
+                                            .align(Alignment.Center)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = item.title,
+                                        color = customTheme.textPrimary,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = item.downloadType.titleArabic,
+                                            color = customTheme.textSecondary,
+                                            fontSize = 11.sp
+                                        )
+                                        Text(
+                                            text = " • ${item.fileSizeFormatted}",
+                                            color = YouTubeGold,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                }
+
+                                // Play offline icon
+                                IconButton(onClick = { if (song != null) onPlayOffline(song) }) {
+                                    Icon(
+                                        imageVector = Icons.Default.PlayArrow,
+                                        contentDescription = "تشغيل أوفلاين",
+                                        tint = Color(0xFF4CAF50),
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                }
+
+                                // Delete button
+                                IconButton(onClick = { onDeleteDownload(item) }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "حذف الملف",
+                                        tint = customTheme.textSecondary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(90.dp))
+                    }
                 }
             }
         }

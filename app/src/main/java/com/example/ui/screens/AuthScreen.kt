@@ -34,6 +34,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -79,6 +80,7 @@ import kotlinx.coroutines.tasks.await
 @Composable
 fun AuthScreen(
     onAuthSuccess: () -> Unit,
+    onSkipSignIn: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -279,7 +281,24 @@ fun AuthScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Skip / Continue as Guest Button
+            TextButton(
+                onClick = onSkipSignIn,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("skip_sign_in_button")
+            ) {
+                Text(
+                    text = "تخطي تسجيل الدخول والمتابعة كزائر ←",
+                    color = YouTubeTextSecondary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Developer Signature: ✪Mister Ali
             Row(

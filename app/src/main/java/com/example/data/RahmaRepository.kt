@@ -4,6 +4,7 @@ import android.content.Context
 import com.example.data.local.AppDao
 import com.example.data.local.DownloadEntity
 import com.example.data.local.FavoriteEntity
+import com.example.data.local.LocalFileEntity
 import com.example.data.local.NotificationEntity
 import com.example.model.AppNotification
 import com.example.model.DownloadStatus
@@ -186,5 +187,22 @@ class RahmaRepository(
                 dao.insertNotification(notif)
             }
         }
+    }
+
+    // Local Device Files
+    fun getAllLocalFiles(): Flow<List<LocalFileEntity>> {
+        return dao.getAllLocalFiles()
+    }
+
+    suspend fun saveLocalFiles(files: List<LocalFileEntity>) = withContext(Dispatchers.IO) {
+        dao.insertLocalFiles(files)
+    }
+
+    suspend fun deleteLocalFile(id: String) = withContext(Dispatchers.IO) {
+        dao.deleteLocalFile(id)
+    }
+
+    suspend fun clearLocalFiles() = withContext(Dispatchers.IO) {
+        dao.clearLocalFiles()
     }
 }

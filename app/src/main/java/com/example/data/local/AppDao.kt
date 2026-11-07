@@ -49,4 +49,21 @@ interface AppDao {
 
     @Query("SELECT COUNT(*) FROM notifications WHERE isRead = 0")
     fun getUnreadNotificationCount(): Flow<Int>
+
+    // Local Files
+    @Query("SELECT * FROM local_files ORDER BY addedAt DESC")
+    fun getAllLocalFiles(): Flow<List<LocalFileEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLocalFile(file: LocalFileEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLocalFiles(files: List<LocalFileEntity>)
+
+    @Query("DELETE FROM local_files WHERE id = :id")
+    suspend fun deleteLocalFile(id: String)
+
+    @Query("DELETE FROM local_files")
+    suspend fun clearLocalFiles()
 }
+

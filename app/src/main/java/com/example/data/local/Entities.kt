@@ -34,3 +34,16 @@ data class NotificationEntity(
     val isRead: Boolean = false,
     val isNewRelease: Boolean = true
 )
+
+@Entity(tableName = "local_files")
+data class LocalFileEntity(
+    @PrimaryKey
+    val id: String,
+    val uriString: String,
+    val displayName: String,
+    val sizeFormatted: String,
+    val mimeType: String,
+    val durationFormatted: String = "ملف محلي",
+    val addedAt: Long = System.currentTimeMillis()
+)
+

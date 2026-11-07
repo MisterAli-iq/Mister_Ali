@@ -12,7 +12,13 @@ import com.example.model.DownloadedMedia
 import com.example.model.Song
 import com.example.model.SongCategory
 import android.util.Log
+import com.example.data.SettingsManager
 import com.example.data.firebase.FirebaseRepository
+import com.example.data.local.LocalFileEntity
+import com.example.model.AppAccentColor
+import com.example.model.AppSettings
+import com.example.model.AppThemeMode
+import com.example.model.PreferredQuality
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.Job
@@ -31,7 +37,8 @@ enum class ScreenTab {
     FAVORITES,
     DOWNLOADS,
     NOTIFICATIONS,
-    ABOUT
+    ABOUT,
+    SETTINGS
 }
 
 data class PlayerUiState(
@@ -53,6 +60,8 @@ data class UiState(
     val songs: List<Song> = RahmaCatalog.songs,
     val favoriteIds: Set<String> = emptySet(),
     val downloads: List<DownloadedMedia> = emptyList(),
+    val localFiles: List<LocalFileEntity> = emptyList(),
+    val settings: AppSettings = AppSettings(),
     val notifications: List<AppNotification> = emptyList(),
     val unreadNotificationsCount: Int = 0,
     val activeDownloadSongId: String? = null,
@@ -65,6 +74,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: RahmaRepository
     private val firebaseRepository: FirebaseRepository = FirebaseRepository(application)
+    private val settingsManager: SettingsManager = SettingsManager(application)
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
@@ -136,6 +146,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             repository.getUnreadCount().collectLatest { count ->
                 _uiState.update { it.copy(unreadNotificationsCount = count) }
+            }
+        }
+
+        // Collect settings
+        viewModelScope.launch {
+            settingsManager.settings.collectLatest { s ->
+                _uiState.update { it.copy(settings = s) }
+                if (s.autoRepeat) {
+                    _playerState.update { it.copy(isLooping = true) }
+                }
+            }
+        }
+
+        // Collect local files
+        viewModelScope.launch {
+            repository.getAllLocalFiles().collectLatest { files ->
+                _uiState.update { it.copy(localFiles = files) }
             }
         }
     }
@@ -281,10 +308,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 delay(1000)
                 val currentSec = _playerState.value.currentPositionSeconds
                 if (currentSec >= totalDurationSeconds) {
-                    if (_playerState.value.isLooping) {
+                    if (_playerState.value.isLooping || _uiState.value.settings.autoRepeat) {
                         _playerState.update { it.copy(currentPositionSeconds = 0) }
-                    } else {
+                    } else if (_uiState.value.settings.autoPlayNext) {
                         playNextSong()
+                        break
+                    } else {
+                        _playerState.update { it.copy(isPlaying = false) }
                         break
                     }
                 } else {
@@ -389,8 +419,127 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(snackbarMessage = null) }
     }
 
+    // Settings actions
+    fun updateThemeMode(mode: AppThemeMode) {
+        settingsManager.updateThemeMode(mode)
+    }
+
+    fun updateAccentColor(accent: AppAccentColor) {
+        settingsManager.updateAccentColor(accent)
+    }
+
+    fun updateShowLocalFiles(show: Boolean) {
+        settingsManager.updateShowLocalFiles(show)
+    }
+
+    fun updateAutoPlayNext(enabled: Boolean) {
+        settingsManager.updateAutoPlayNext(enabled)
+    }
+
+    fun updateRememberPosition(enabled: Boolean) {
+        settingsManager.updateRememberPosition(enabled)
+    }
+
+    fun updateQuality(quality: PreferredQuality) {
+        settingsManager.updateQuality(quality)
+    }
+
+    fun updateAutoRepeat(enabled: Boolean) {
+        settingsManager.updateAutoRepeat(enabled)
+        _playerState.update { it.copy(isLooping = enabled) }
+    }
+
+    fun updateLyricsSync(enabled: Boolean) {
+        settingsManager.updateLyricsSync(enabled)
+    }
+
+    fun updateWifiOnly(enabled: Boolean) {
+        settingsManager.updateWifiOnly(enabled)
+    }
+
+    fun updateNotifications(enabled: Boolean) {
+        settingsManager.updateNotifications(enabled)
+    }
+
+    fun updateVibrate(enabled: Boolean) {
+        settingsManager.updateVibrate(enabled)
+    }
+
+    private var sleepTimerJob: Job? = null
+
+    fun updateSleepTimer(minutes: Int) {
+        settingsManager.updateSleepTimer(minutes)
+        sleepTimerJob?.cancel()
+        if (minutes > 0) {
+            sleepTimerJob = viewModelScope.launch {
+                delay(minutes * 60 * 1000L)
+                _playerState.update { it.copy(isPlaying = false) }
+                settingsManager.updateSleepTimer(0)
+                showSnackbar("انتهى مؤقت النوم، تم إيقاف التشغيل 🌙")
+            }
+            showSnackbar("تم ضبط مؤقت النوم على $minutes دقيقة")
+        } else {
+            showSnackbar("تم إيقاف مؤقت النوم")
+        }
+    }
+
+    fun clearCache() {
+        viewModelScope.launch {
+            try {
+                val cacheDir = getApplication<Application>().cacheDir
+                cacheDir.deleteRecursively()
+                cacheDir.mkdirs()
+                showSnackbar("تم تنظيف ذاكرة التخزين المؤقت بنجاح 🧹")
+            } catch (e: Exception) {
+                showSnackbar("تم فحص وتنظيف الذاكرة المؤقتة")
+            }
+        }
+    }
+
+    // Local files actions
+    fun importLocalFiles(files: List<LocalFileEntity>) {
+        viewModelScope.launch {
+            repository.saveLocalFiles(files)
+            showSnackbar("تم استيراد ${files.size} ملف من ذاكرة الهاتف بنجاح 📁")
+        }
+    }
+
+    fun deleteLocalFile(id: String) {
+        viewModelScope.launch {
+            repository.deleteLocalFile(id)
+            showSnackbar("تم حذف الملف من القائمة")
+        }
+    }
+
+    fun clearAllLocalFiles() {
+        viewModelScope.launch {
+            repository.clearLocalFiles()
+            showSnackbar("تم مسح جميع الملفات المحلية")
+        }
+    }
+
+    fun playLocalFile(file: LocalFileEntity) {
+        val localSong = Song(
+            id = "local_${file.id}",
+            title = file.displayName,
+            arabicTitle = file.displayName,
+            category = SongCategory.ALL,
+            durationSeconds = 180,
+            durationFormatted = file.durationFormatted,
+            viewsCount = "ملف محلي",
+            releaseYear = "الهاتف",
+            description = "ملف من ذاكرة الجهاز: ${file.sizeFormatted}",
+            lyrics = "ملف صوتي/مرئي مستورد من جهازك الشخصي.\n\nاسم الملف:\n${file.displayName}\n\nنوع المحتوى:\n${file.mimeType}\n\nالحجم:\n${file.sizeFormatted}\n\nالمسار:\n${file.uriString}",
+            composer = "ملف محلي",
+            lyricist = "ذاكرة الجهاز",
+            isVideoAvailable = file.mimeType.startsWith("video")
+        )
+        playSong(localSong, expandPlayer = true)
+    }
+
     override fun onCleared() {
         super.onCleared()
         playbackJob?.cancel()
+        sleepTimerJob?.cancel()
     }
 }

@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
@@ -48,6 +49,7 @@ import com.example.ui.theme.YouTubeBlack
 import com.example.ui.theme.YouTubeRed
 import com.example.ui.theme.YouTubeTextPrimary
 import com.example.ui.theme.YouTubeTextSecondary
+import com.example.ui.theme.LocalCustomTheme
 
 @Composable
 fun YouTubeTopBar(
@@ -58,14 +60,16 @@ fun YouTubeTopBar(
     onSearchToggle: (Boolean) -> Unit,
     onNotificationClick: () -> Unit,
     onAboutClick: () -> Unit,
+    onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
+    val customTheme = LocalCustomTheme.current
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(YouTubeBlack)
+            .background(customTheme.background)
             .statusBarsPadding()
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
@@ -238,7 +242,18 @@ fun YouTubeTopBar(
                         Icon(
                             imageVector = Icons.Default.Info,
                             contentDescription = "حول التطبيق والمطور",
-                            tint = YouTubeTextSecondary
+                            tint = customTheme.textSecondary
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onSettingsClick,
+                        modifier = Modifier.testTag("settings_top_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "الإعدادات",
+                            tint = customTheme.textSecondary
                         )
                     }
                 }
