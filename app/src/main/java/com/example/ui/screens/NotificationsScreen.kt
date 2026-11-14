@@ -1,6 +1,8 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,7 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -31,17 +32,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.example.R
 import com.example.model.AppNotification
-import com.example.ui.theme.YouTubeBlack
+import com.example.ui.theme.LocalCustomTheme
 import com.example.ui.theme.YouTubeGold
 import com.example.ui.theme.YouTubeRed
-import com.example.ui.theme.YouTubeSurface
-import com.example.ui.theme.YouTubeTextPrimary
-import com.example.ui.theme.YouTubeTextSecondary
 
 @Composable
 fun NotificationsScreen(
@@ -49,10 +52,12 @@ fun NotificationsScreen(
     onNotificationClick: (AppNotification) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val customTheme = LocalCustomTheme.current
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(YouTubeBlack)
+            .background(customTheme.background)
             .padding(horizontal = 14.dp)
     ) {
         // Header
@@ -72,8 +77,8 @@ fun NotificationsScreen(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "تنبيهات الإصدارات الجديدة",
-                    color = YouTubeTextPrimary,
+                    text = "تنبيهات الأعمال الجديدة",
+                    color = customTheme.textPrimary,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -86,7 +91,7 @@ fun NotificationsScreen(
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = "تنبيهات حية",
+                    text = "عد تنازلي 6 ثوان",
                     color = YouTubeRed,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
@@ -105,22 +110,22 @@ fun NotificationsScreen(
                     Icon(
                         imageVector = Icons.Default.Notifications,
                         contentDescription = null,
-                        tint = YouTubeTextSecondary,
+                        tint = customTheme.textSecondary,
                         modifier = Modifier.size(68.dp)
                     )
                     Spacer(modifier = Modifier.height(14.dp))
                     Text(
                         text = "لا توجد تنبيهات جديدة",
-                        color = YouTubeTextPrimary,
+                        color = customTheme.textPrimary,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "ستصلك هنا إشعارات فورية عند صدور أي أغنية أو كليب جديد للفنانة رحمة رياض.",
-                        color = YouTubeTextSecondary,
+                        text = "ستصلك هنا إشعارات فورية مع الصورة المصغرة عند صدور أي أغنية أو كليب جديد لرحمة رياض.",
+                        color = customTheme.textSecondary,
                         fontSize = 13.sp,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        textAlign = TextAlign.Center
                     )
                 }
             }
@@ -140,31 +145,64 @@ fun NotificationsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 5.dp)
-                            .clickable { onNotificationClick(notif) },
+                            .clickable { onNotificationClick(notif) }
+                            .testTag("notification_card_${notif.id}"),
                         colors = CardDefaults.cardColors(
-                            containerColor = if (isUnread) Color(0xFF241518) else YouTubeSurface
+                            containerColor = if (isUnread) Color(0xFF241518) else customTheme.surface
                         ),
-                        shape = RoundedCornerShape(10.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(
+                            width = 0.6.dp,
+                            color = if (isUnread) YouTubeRed.copy(alpha = 0.45f) else customTheme.border
+                        )
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(12.dp),
-                            verticalAlignment = Alignment.Top
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
+                            // Thumbnail Image withfallback
                             Box(
                                 modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(if (notif.isNewRelease) YouTubeRed else YouTubeGold.copy(alpha = 0.3f)),
+                                    .size(width = 82.dp, height = 54.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFF1C1C1C))
+                                    .border(0.6.dp, YouTubeGold.copy(alpha = 0.4f), RoundedCornerShape(8.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(
-                                    imageVector = if (notif.isNewRelease) Icons.Default.Whatshot else Icons.Default.Notifications,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(22.dp)
-                                )
+                                if (!notif.thumbnailUrl.isNullOrBlank()) {
+                                    AsyncImage(
+                                        model = notif.thumbnailUrl,
+                                        contentDescription = notif.title,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize(),
+                                        error = painterResource(id = R.drawable.img_rahma_instagram_concert)
+                                    )
+                                } else {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.rahma_avatar),
+                                        contentDescription = notif.title,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                }
+                                if (notif.songId != null || !notif.linkedUrl.isNullOrBlank()) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(26.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xAA000000)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.PlayArrow,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
                             }
 
                             Spacer(modifier = Modifier.width(12.dp))
@@ -177,7 +215,7 @@ fun NotificationsScreen(
                                 ) {
                                     Text(
                                         text = notif.title,
-                                        color = YouTubeTextPrimary,
+                                        color = customTheme.textPrimary,
                                         fontSize = 14.sp,
                                         fontWeight = if (isUnread) FontWeight.Bold else FontWeight.SemiBold,
                                         modifier = Modifier.weight(1f)
@@ -197,7 +235,7 @@ fun NotificationsScreen(
 
                                 Text(
                                     text = notif.message,
-                                    color = YouTubeTextSecondary,
+                                    color = customTheme.textSecondary,
                                     fontSize = 12.sp,
                                     lineHeight = 17.sp
                                 )
@@ -216,10 +254,10 @@ fun NotificationsScreen(
                                         fontWeight = FontWeight.Medium
                                     )
 
-                                    if (notif.songId != null) {
+                                    if (notif.songId != null || !notif.linkedUrl.isNullOrBlank()) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(
-                                                text = "تشغيل الآن",
+                                                text = "معاينة وتشغيل",
                                                 color = YouTubeRed,
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold

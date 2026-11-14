@@ -3,7 +3,6 @@ package com.example.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
@@ -39,6 +39,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.model.AppSettings
 import com.example.model.DownloadType
 import com.example.model.Song
 import com.example.ui.theme.YouTubeBorder
@@ -52,13 +53,16 @@ import com.example.ui.theme.YouTubeTextSecondary
 @Composable
 fun DownloadDialog(
     song: Song,
+    settings: AppSettings = AppSettings(),
     onDismiss: () -> Unit,
     onConfirmDownload: (Song, DownloadType) -> Unit
 ) {
-    var selectedType by remember { mutableStateOf(DownloadType.FULL_VIDEO) }
-
-    val videoEstMb = String.format("%.1f MB", (song.durationSeconds * 0.12).coerceAtLeast(14.0))
-    val audioEstMb = String.format("%.1f MB", (song.durationSeconds * 0.035).coerceAtLeast(3.8))
+    val initialType = if (settings.defaultDownloadType == "AUDIO_ONLY") {
+        DownloadType.AUDIO_ONLY
+    } else {
+        DownloadType.FULL_VIDEO
+    }
+    var selectedType by remember(song.id) { mutableStateOf(initialType) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -75,7 +79,7 @@ fun DownloadDialog(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "تحميل للاستماع بدون إنترنت",
+                    text = "تنزيل حقيقي بدون إنترنت",
                     color = YouTubeTextPrimary,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold
@@ -87,13 +91,13 @@ fun DownloadDialog(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "اختر صيغة التحميل المفضلة لأغنية «${song.arabicTitle}»:",
+                    text = "اختر صيغة التحميل المفضلة لـ «${song.arabicTitle}»:",
                     color = YouTubeTextSecondary,
                     fontSize = 13.sp,
                     lineHeight = 18.sp
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // Option 1: Full Video
                 val isVideo = selectedType == DownloadType.FULL_VIDEO
@@ -128,13 +132,13 @@ fun DownloadDialog(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "فيديو كامل عالي الدقة (MP4)",
+                                text = "فيديو كامل مباشر (MP4)",
                                 color = YouTubeTextPrimary,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = "صوت وصورة كليب • الحجم التقديري: $videoEstMb",
+                                text = "جودة التنزيل: ${settings.downloadQuality.titleArabic}",
                                 color = YouTubeTextSecondary,
                                 fontSize = 11.sp
                             )
@@ -177,18 +181,43 @@ fun DownloadDialog(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "مسار صوتي نقي (MP3)",
+                                text = "مسار صوتي نقي (M4A / MP3)",
                                 color = YouTubeTextPrimary,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = "يوفر المساحة وسريع • الحجم التقديري: $audioEstMb",
+                                text = "استخراج مباشر للمسار الصوتي فقط بحجم خفيف",
                                 color = YouTubeTextSecondary,
                                 fontSize = 11.sp
                             )
                         }
                     }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFF181818))
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Folder,
+                        contentDescription = null,
+                        tint = YouTubeGold,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "مكان الحفظ: ${settings.downloadStorageLocation.titleArabic}",
+                        color = YouTubeGold,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         },
@@ -198,7 +227,7 @@ fun DownloadDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = YouTubeRed),
                 modifier = Modifier.testTag("confirm_download_button")
             ) {
-                Text("بدء التحميل الآن", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("بدء التحميل الحقيقي", color = Color.White, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {

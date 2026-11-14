@@ -1,6 +1,6 @@
 {
   "name": "RahmaRiad",
-  "description": "تطبيق أغاني وفيديوهات الفنانة رحمة رياض مع واجهة يوتيوب وخاصية التنزيل بدون إنترنت والمفضلة وحقوق Mister Ali",
+  "description": "مشغل وسائط ذكي ومتقدم لأعمال الفنانة رحمة رياض مع بحث مدعوم بالذكاء الاصطناعي وتنزيل أوفلاين وحقوق ✪Mister Ali",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -44,7 +44,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
-import com.example.data.RahmaCatalog
 import com.example.model.Song
 import com.example.ui.components.ShareHelper
 import com.example.ui.theme.YouTubeBlack
@@ -56,6 +55,7 @@ import com.example.ui.theme.YouTubeTextSecondary
 
 @Composable
 fun FavoritesScreen(
+    allSongs: List<Song>,
     favoriteIds: Set<String>,
     onSongClick: (Song) -> Unit,
     onRemoveFavorite: (Song) -> Unit,
@@ -63,7 +63,7 @@ fun FavoritesScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val favoriteSongs = RahmaCatalog.songs.filter { favoriteIds.contains(it.id) }
+    val favoriteSongs = allSongs.filter { favoriteIds.contains(it.id) }
 
     Column(
         modifier = modifier

@@ -1,72 +1,29 @@
 package com.example.model
 
-enum class SongCategory(val displayName: String, val tag: String) {
-    ALL("الكل", "all"),
-    LATEST("أحدث الأغاني", "latest"),
-    CLIPS("فيديو كليبات", "clips"),
-    CONCERTS("حفلات مباشرة", "concerts"),
-    SESSIONS("جلسات طربية", "sessions"),
-    DUETS("ديو ومشاركات", "duets")
+enum class SongCategory(val displayName: String) {
+    ALL("الكل"),
+    FEATURED("أغاني مميزة"),
+    LATEST("أحدث الأعمال"),
+    CONCERTS("حفلات ومهرجانات"),
+    MUSIC_VIDEO("فيديو كليب"),
+    REELS("ريلز وشورتس"),
+    IMPORTED("روابطي المستوردة");
+
+    val titleArabic: String
+        get() = displayName
+
+    companion object {
+        fun fromStoredName(raw: String?): SongCategory {
+            if (raw.isNullOrBlank()) return LATEST
+            if (raw.equals("CLIPS", ignoreCase = true)) return MUSIC_VIDEO
+            return runCatching { valueOf(raw.trim()) }.getOrDefault(LATEST)
+        }
+    }
 }
 
-data class Song(
-    val id: String,
-    val title: String,
-    val arabicTitle: String,
-    val category: SongCategory,
-    val durationSeconds: Int,
-    val durationFormatted: String,
-    val viewsCount: String,
-    val releaseYear: String,
-    val description: String,
-    val lyrics: String,
-    val composer: String,
-    val lyricist: String,
-    val isNewRelease: Boolean = false,
-    val gradientStartHex: Long = 0xFF8B0000,
-    val gradientEndHex: Long = 0xFF1A1A1A,
-    val isVideoAvailable: Boolean = true,
-    val youtubeVideoId: String = "VlhKzTzVfqg",
-    val likesCount: String = "1.5M إعجاب",
-    val commentsCount: String = "45K تعليق",
-    val channelSubscribers: String = "5.8M مشترك",
-    val publishDate: String = "2021",
-    val trendingRank: String? = null
-)
-
-data class RahmaReel(
-    val id: String,
-    val title: String,
-    val caption: String,
-    val youtubeVideoId: String,
-    val viewsCount: String,
-    val likesCount: String,
-    val initialLikes: Int = 125000,
-    val commentsCount: String = "3.4K",
-    val sharesCount: String = "14.2K",
-    val songTitle: String = "رحمة رياض - الكوكب",
-    val dateText: String = "جديد",
-    val tags: List<String> = listOf("رحمة_رياض", "شورتس", "تريند_عراقي")
-)
-
-data class ReelComment(
-    val id: String,
-    val authorName: String,
-    val text: String,
-    val timeAgo: String,
-    val likesCount: String
-)
-
-enum class DownloadType(val titleArabic: String, val extension: String) {
-    FULL_VIDEO("فيديو كامل بدقة عالية (MP4)", "mp4"),
-    AUDIO_ONLY("مسار صوتي عالي النقاء (MP3)", "mp3")
-}
-
-enum class DownloadStatus {
-    IDLE,
-    DOWNLOADING,
-    COMPLETED,
-    FAILED
+enum class DownloadType(val titleArabic: String) {
+    FULL_VIDEO("فيديو كامل"),
+    AUDIO_ONLY("صوت فقط")
 }
 
 data class DownloadedMedia(
@@ -80,12 +37,92 @@ data class DownloadedMedia(
     val localFilePath: String
 )
 
+data class Song(
+    val id: String,
+    val title: String,
+    val arabicTitle: String,
+    val category: SongCategory = SongCategory.ALL,
+    val durationSeconds: Int = 0,
+    val durationFormatted: String = "",
+    val viewsCount: String = "",
+    val likesCount: String = "",
+    val releaseYear: String = "",
+    val description: String = "",
+    val lyrics: String = "",
+    val composer: String = "رحمة رياض",
+    val lyricist: String = "",
+    val isNewRelease: Boolean = false,
+    val isFeatured: Boolean = false,
+    val isVideoAvailable: Boolean = true,
+    val youtubeVideoId: String = "",
+    val thumbnailUrl: String? = null,
+    val sourcePlatform: String = "Rahma Riad | رحمة رياض",
+    val publishDate: String = "",
+    val externalUrl: String? = null,
+    val resolvedStreamUrl: String? = null,
+    val localFilePath: String? = null,
+    val isShort: Boolean = false,
+    val isUserImported: Boolean = false,
+    val channelHandle: String = "@RahmaRiad",
+    val mediaType: String = "VIDEO",
+    val album: String = "سنجل",
+    val gradientStartHex: Long = 0xFF2B0810L,
+    val gradientEndHex: Long = 0xFF0F0F0FL
+) {
+    val isShortReel: Boolean
+        get() = isShort
+}
+
+data class RahmaReel(
+    val id: String,
+    val title: String,
+    val caption: String = "",
+    val sourceUrl: String = "",
+    val youtubeVideoId: String = "",
+    val thumbnailUrl: String? = null,
+    val resolvedStreamUrl: String? = null,
+    val platformLabel: String = "رحمة رياض الرسمية",
+    val songTitle: String = "",
+    val dateText: String = "",
+    val initialLikes: Int = 0,
+    val isUserImported: Boolean = false,
+    val tags: List<String> = emptyList(),
+    val channelHandle: String = "@RahmaRiad",
+    val gradientStartHex: Long = 0xFF2B0810L,
+    val gradientEndHex: Long = 0xFF0F0F0FL
+)
+
+enum class ReelFilter(val displayName: String) {
+    ALL("الكل"),
+    OFFICIAL("الرسمية"),
+    INSTAGRAM("إنستغرام"),
+    TIKTOK("تيك توك"),
+    IMPORTED("المستوردة"),
+    SAVED("المحفوظة")
+}
+
+data class ReelComment(
+    val id: String,
+    val reelId: String,
+    val authorName: String,
+    val text: String,
+    val timeAgo: String = "الآن"
+)
+
 data class AppNotification(
     val id: String,
-    val songId: String?,
+    val songId: String? = null,
     val title: String,
     val message: String,
     val timestamp: String,
     val isRead: Boolean = false,
-    val isNewRelease: Boolean = true
+    val isNewRelease: Boolean = true,
+    val thumbnailUrl: String? = null,
+    val linkedUrl: String? = null
+)
+
+data class AppUser(
+    val name: String,
+    val email: String,
+    val isGuest: Boolean = false
 )

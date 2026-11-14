@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import com.example.data.RahmaCatalog
 import com.example.model.Song
 import com.example.ui.theme.YouTubeRed
 import com.example.ui.theme.YouTubeSurface
@@ -104,7 +105,7 @@ fun MiniPlayer(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "رحمة رياض • ✪Mister Ali",
+                    text = RahmaCatalog.displayChannelName(song),
                     color = YouTubeTextSecondary,
                     fontSize = 11.sp,
                     maxLines = 1,

@@ -3,6 +3,6 @@
     <item
         android:width="66dp"
         android:height="66dp"
-        android:drawable="@drawable/ic_rahma_launcher"
+        android:drawable="@drawable/img_rahma_blue_icon"
         android:gravity="center" />
 </layer-list>
